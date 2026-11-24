@@ -1,0 +1,331 @@
+:root {
+  --bg-outer: #000000;
+  --stage-top: #f4f4f6;
+  --stage-bottom: #ebecef;
+  --stage-radius: 28px;
+  --pill-w: 236px;
+  --pill-h: 68px;
+  --ink-text: #ffffff;
+  --ui-ink: #17171c;
+  --ui-muted: #5a5a66;
+  --ui-border: rgba(17, 17, 22, 0.11);
+  --ui-surface: rgba(255, 255, 255, 0.84);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-outer);
+  overflow-x: clip;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.viewport {
+  min-height: 100dvh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.stage-card {
+  position: relative;
+  width: min(94vw, 1080px);
+  height: min(88vh, 640px);
+  min-height: 360px;
+  border-radius: var(--stage-radius);
+  background: linear-gradient(180deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.stage-card.use-custom-cursor,
+.stage-card.use-custom-cursor .collab-btn {
+  cursor: none;
+}
+
+.stage-card.tune-hovered,
+.stage-card.tune-hovered .tune-dock,
+.stage-card.tune-hovered .tune-dock * {
+  cursor: auto;
+}
+
+.stage-card.tune-hovered .tune-toggle,
+.stage-card.tune-hovered .tune-reset,
+.stage-card.tune-hovered .tune-check,
+.stage-card.tune-hovered input[type="range"],
+.stage-card.tune-hovered input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* Layer 2: Custom Hand Cursor */
+.custom-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 36px;
+  z-index: 2;
+  pointer-events: none;
+  will-change: transform;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.18));
+}
+
+.custom-cursor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Layer 3: WebGL2 3D Glossy Ink Canvas */
+#ink-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+  display: block;
+}
+
+/* Layer 4: Accessible Real Button */
+.collab-btn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  width: var(--pill-w);
+  height: var(--pill-h);
+  padding: 0 24px;
+  border-radius: 999px;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.collab-btn__label {
+  display: inline-block;
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.collab-btn.is-pressed .collab-btn__label {
+  transform: scale(0.965);
+}
+
+.collab-btn:focus-visible {
+  outline: 2px solid #141418;
+  outline-offset: 6px;
+}
+
+/* Fallback static 3D glossy CSS pill for reduced-motion or no-webgl */
+.stage-card.no-webgl .collab-btn,
+.stage-card.reduced-motion .collab-btn {
+  background:
+    radial-gradient(120% 80% at 32% 14%, rgba(255, 255, 255, 0.36) 0%, rgba(255, 255, 255, 0.06) 28%, rgba(255, 255, 255, 0) 54%),
+    linear-gradient(180deg, #1b1c20 0%, #060608 55%, #16171c 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.42),
+    inset 0 -3px 5px rgba(255, 255, 255, 0.14),
+    3px 12px 24px rgba(10, 12, 20, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collab-btn {
+    background:
+      radial-gradient(120% 80% at 32% 14%, rgba(255, 255, 255, 0.36) 0%, rgba(255, 255, 255, 0.06) 28%, rgba(255, 255, 255, 0) 54%),
+      linear-gradient(180deg, #1b1c20 0%, #060608 55%, #16171c 100%);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.42),
+      inset 0 -3px 5px rgba(255, 255, 255, 0.14),
+      3px 12px 24px rgba(10, 12, 20, 0.28);
+  }
+}
+
+/* Layer 5: Collapsible Tune Dock */
+.tune-dock {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.tune-toggle {
+  appearance: none;
+  border: 1px solid rgba(17, 17, 22, 0.09);
+  background: rgba(255, 255, 255, 0.56);
+  backdrop-filter: blur(8px);
+  color: rgba(23, 23, 28, 0.62);
+  border-radius: 999px;
+  padding: 6px 11px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.tune-toggle:hover,
+.tune-toggle[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ui-ink);
+  border-color: rgba(17, 17, 22, 0.16);
+}
+
+.tune-toggle:focus-visible {
+  outline: 1.5px solid rgba(20, 20, 24, 0.36);
+  outline-offset: 2px;
+}
+
+.tune-panel {
+  width: 236px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  background: var(--ui-surface);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--ui-border);
+  box-shadow: 0 12px 30px rgba(15, 16, 24, 0.12);
+  color: var(--ui-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tune-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(17, 17, 22, 0.07);
+}
+
+.tune-panel__title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tune-reset {
+  appearance: none;
+  border: 1px solid rgba(17, 17, 22, 0.12);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--ui-ink);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tune-reset:hover {
+  background: #ffffff;
+}
+
+.tune-reset:focus-visible {
+  outline: 2px solid #141418;
+  outline-offset: 2px;
+}
+
+.tune-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tune-row__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--ui-muted);
+}
+
+.tune-row__meta output {
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-ink);
+  font-weight: 500;
+}
+
+.tune-row input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: #141418;
+  cursor: pointer;
+}
+
+.tune-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ui-ink);
+  padding-top: 2px;
+  cursor: pointer;
+}
+
+.tune-check input[type="checkbox"] {
+  accent-color: #141418;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .viewport {
+    padding: 10px;
+  }
+
+  .stage-card {
+    width: calc(100vw - 20px);
+    height: min(86dvh, 560px);
+    border-radius: 22px;
+  }
+
+  .tune-dock {
+    top: 12px;
+    right: 12px;
+  }
+
+  .tune-panel {
+    width: min(230px, calc(100vw - 44px));
+  }
+}
